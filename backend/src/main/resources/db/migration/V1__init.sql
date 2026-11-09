@@ -1,0 +1,3 @@
+-- V1__init.sql
+-- OpenShelf Initial Schema Baseline
+-- Business tables will be introduced in subsequent feature phases.
