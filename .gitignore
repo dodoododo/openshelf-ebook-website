@@ -48,5 +48,3 @@ lerna-debug.log*
 # Database & Storage
 data/
 uploads/
-
-AGENTS.md

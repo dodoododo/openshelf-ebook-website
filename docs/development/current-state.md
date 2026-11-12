@@ -1,20 +1,22 @@
 # OpenShelf — Current Engineering State
 
-**Last Updated:** Phase 0 (Bootstrap Completion)
+**Last Updated:** Workflow Realignment (Frontend-First after Authentication)
 
 ---
 
 ## 1. Current Development Phase
-- **Active Phase:** Phase 0 — Full-Stack Project Initialization & Engineering Setup
-- **Status:** Complete & Fully Verified
+- **Active Phase:** Phase 1 — Full-Stack Authentication & User Management
+- **Workflow Strategy:** Frontend-First Development after Authentication
+  - *Rationale:* User authentication establishes the identity foundation. Following authentication, all layouts, pages, interactive prototypes, and the Web PDF Reader will be built frontend-first using typed mock contracts before implementing backend business logic. This guarantees UI ergonomics and API expectation stability before database schemas are locked down.
+- **Status:** Phase 0 Bootstrap Audit Complete & Verified. Phase 1 ready to commence.
 
 ---
 
-## 2. Completed Work
+## 2. Completed Work (Phase 0 Bootstrap)
 
 ### 2.1 Repository & Environment
 - Established monorepo root structure with `frontend/`, `backend/`, `docs/`, `scripts/`, `.github/workflows/`.
-- Configured `.gitignore` covering Windows, IDEs, build artifacts, and secrets.
+- Configured `.gitignore` covering Windows, IDEs, build artifacts, and secrets. Fixed defect where `AGENTS.md` was inadvertently ignored.
 - Generated `.env.example` and safe local `.env` with auto-generated credentials (excluded from git).
 - Authored AI engineering governance guide (`AGENTS.md`) and project `README.md`.
 
@@ -63,20 +65,21 @@
 
 ---
 
-## 4. Known Issues & Minor Observations
-- JDK 23 is the primary system JDK; compilation compiles cleanly for Java 21 bytecode via Maven `--release 21`. If a native Java 21 JDK is desired side-by-side, it can be installed via `winget install EclipseAdoptium.Temurin.21.JDK`.
-- In PowerShell, run commands using `.cmd` extensions (e.g. `npm.cmd`, `docker.exe`) to bypass Windows PowerShell execution policy or broken System32 stubs.
+## 4. Architectural Decisions & Realignment
+
+1. **Workflow Sequence Decision:** The team approved a **Frontend-First workflow after Authentication**.
+   - Sequence: Phase 1 (Auth) -> Phase 2 (Design System) -> Phase 3 (Frontend Pages & Prototypes) -> Phase 4 (Backend Business Core) -> Phase 5 (API Integration).
+   - Rationale: Completing auth first provides true user sessions. Building the UI next ensures optimal reading ergonomics, validated contracts, and responsive layout testing with a real sample PDF before backend schemas and APIs are finalized.
+2. **Replaceable Service Layer Strategy:** All Phase 3 frontend pages will interact with a typed service layer that returns mock data matching the future backend DTO contracts. Live API calls will be enabled in Phase 5 without touching page components.
+3. **PDF Reader Real Binary Validation:** The Web PDF Reader will be tested and visually verified using a bundled `public/sample.pdf` before Phase 3 is considered complete.
 
 ---
 
-## 5. Pending Decisions
-- Finalize JWT authentication claim structure (sub, email, roles, expiration) for Phase 1.
-- Choose between local filesystem storage vs MinIO for local S3 simulation in Phase 2.
+## 5. Recommended Next Task
 
----
-
-## 6. Recommended Next Task
-**Phase 1 — Task 1: Database Schema Migration for User Accounts & Authentication Foundation**
-- Define `users` table Flyway migration (`V2__create_users_table.sql`).
-- Implement User entity, repository, and DTOs.
-- Implement BCrypt password encoding and Spring Security UserDetailsService / JWT filter.
+**Phase 1: Full-Stack Authentication & User Management**
+1. Backend: Flyway migration `V2__create_users_table.sql` and `User` entity / `UserRepository`.
+2. Backend: `BCryptPasswordEncoder`, `JwtService`, and `JwtAuthenticationFilter`.
+3. Backend: `AuthController` (`/register`, `/login`, `/me`) and validation handling.
+4. Frontend: Auth context (`AuthContext`), token storage, and responsive Login / Register forms.
+5. Verification: End-to-end user registration and login flow.
