@@ -1,6 +1,6 @@
 # OpenShelf — Database Design
 
-> **Implementation status (2026-11-13):** `users` (V2), `books`, and `book_files` (V3) are implemented. Reading progress, annotations, publication, and preferences tables below remain preliminary. V1 and V2 are unchanged; Hibernate uses `validate`, with automatic Flyway baselining disabled. Milestone 2 verification uses disposable databases; pending V2/V3 migrations apply to the normal development database on its next normal startup, without reset. See [the upload milestone report](../development/upload-milestone-2.md).
+> **Implementation status (2026-11-14):** `users` (V2), private `books`/`book_files` (V3), and `reading_progress` (V4) are implemented. Annotations, publication, and preferences remain preliminary. V1/V2/V3 are unchanged; Hibernate uses `validate`. Verification uses disposable PostgreSQL only. Normal startup applies pending forward migrations without resetting data. See [Milestone 3](../development/reading-progress-milestone-3.md).
 
 ## 1. Overview & Strategy
 
@@ -21,6 +21,14 @@ Database ownership comes exclusively from the session principal, not form input.
 
 ---
 
+### Implemented V4: private reading progress
+
+`V4__create_reading_progress.sql` adds `reading_progress` with UUID identity, user/book/file references, positive `current_page`, `furthest_page >= current_page`, and UTC-compatible `TIMESTAMPTZ` timestamps. Unique `(user_id, book_file_id)` prevents duplicate first saves. The added unique `book_files(book_id, id)` key supports a composite foreign key from progress; user/book/file deletion cascades metadata. Page-count upper bounds and current ownership are checked in the service against trusted latest-file metadata.
+
+Indexes `(user_id, last_read_at DESC, id DESC)` and `(book_id, book_file_id)` support recent reading and foreign-key operations. A single PostgreSQL upsert uses `GREATEST` to retain the largest **successfully reported** page during concurrent updates. `current_page` may move backward; percentage is calculated from current page and file page count, not stored. No finished flag or analytics exists.
+
+Progress is tied to immutable `book_files.id`. A future replacement starts fresh; old progress is retained but excluded from Continue Reading. Stale file IDs receive 409. There is no replacement API yet. The recent query uses ownership-scoped to-one fetch joins, explicit count pagination, and latest-version filtering, avoiding N+1 reads. V3-to-V4 upgrade tests preserve existing book/file IDs and applied checksums.
+
 ## 2. Preliminary Entity-Relationship Diagram
 
 ```mermaid
@@ -33,6 +41,7 @@ erDiagram
     USERS ||--o{ USER_PREFERENCES : "configures"
 
     BOOKS ||--o{ READING_PROGRESS : "records"
+    BOOK_FILES ||--o{ READING_PROGRESS : "anchors"
     BOOKS ||--o{ BOOK_FILES : "versions"
     BOOKS ||--o{ BOOKMARKS : "contains"
     BOOKS ||--o{ HIGHLIGHTS : "contains"
@@ -91,10 +100,11 @@ erDiagram
         uuid user_id FK
         uuid book_id FK
         integer current_page
-        numeric progress_percentage
-        boolean is_finished
-        timestamptz finished_at
+        uuid book_file_id FK
+        integer furthest_page
         timestamptz last_read_at
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     BOOKMARKS {
@@ -168,7 +178,7 @@ erDiagram
 ## 4. Key Indexing & Query Considerations
 
 - **Unique Compound Keys:**
-  - `reading_progress (user_id, book_id)` must enforce uniqueness so each reader has exactly one active progress record per book.
+  - `reading_progress (user_id, book_file_id)` enforces one progress record per user and immutable PDF version; a composite book/file foreign key ensures the file belongs to the book.
   - `user_preferences (user_id)` enforces a single preference profile per user.
 - **Search Optimization:**
   - `books (title, author)` with PostgreSQL `pg_trgm` or B-Tree indexes for fast auto-complete and catalog search.

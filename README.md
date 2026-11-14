@@ -130,8 +130,8 @@ Detailed project documentation is available in the `docs/` folder:
 
 ## 7. Current Development Status
 
-- **Phase:** Authentication and the visual foundation are completed. Core Reading Milestones 1 and 2 are implemented and verified: the PDF Reader plus private upload/storage and a real My Library.
-- **Status:** 34 backend tests, 43 frontend tests, and 24 full-suite browser tests pass. Production upload checks also verify persistence across a backend JVM restart and private access isolation. Existing development data and V1/V2 are preserved; pending migrations apply on normal backend startup.
-- **Next Step:** Milestone 3 — Database-backed Private Reading Progress & Continue Reading, when requested. Current reading progress remains browser-local.
+- **Phase:** Authentication and the visual foundation are completed. Core Reading Milestones 1–3 implement the PDF Reader, private upload/storage, account reading progress and Continue Reading.
+- **Status:** 42 backend tests, 56 frontend tests and 30 full-suite browser tests pass. V1/V2/V3 are preserved; pending forward migrations apply on normal backend startup. See the [Milestone 3 report](docs/development/reading-progress-milestone-3.md) for production/restart verification and limits.
+- **Next Step:** Milestone 4 — Private Bookmarks, scoped separately. Uploaded PDFs now restore PostgreSQL-backed account progress; the CC0 sample alone retains browser-local progress.
 
-Sign in and open **My Library → Upload PDF** to read a private PDF. Uploads are limited to 30 MiB by default and stored outside public assets under the JVM user's `~/.openshelf/storage/books`, or an absolute `OPENSHELF_STORAGE_ROOT` override. Normal backend startup applies the forward V3 migration; do not reset the database. See [Milestone 2 configuration, API contracts, verification, and screenshots](docs/development/upload-milestone-2.md).
+Sign in and open **My Library → Upload PDF** to read a private PDF. Wait for **Saved · account progress** before closing; resume through Continue Reading on your next login. Uploads are limited to 30 MiB by default and stored outside public assets under the JVM user's `~/.openshelf/storage/books`, or an absolute `OPENSHELF_STORAGE_ROOT` override. Normal backend startup applies pending V3/V4 migrations; do not reset the database. See [Milestone 2 storage configuration](docs/development/upload-milestone-2.md) and [Milestone 3 progress contracts and verification](docs/development/reading-progress-milestone-3.md).

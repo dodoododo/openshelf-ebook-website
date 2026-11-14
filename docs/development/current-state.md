@@ -1,6 +1,6 @@
 # OpenShelf — Current Engineering State
 
-**Last Updated:** 2026-11-13 — Core Reading Milestone 2 implemented and verified
+**Last Updated:** 2026-11-14 — Milestone 3 verified; Milestone 4 design proposed only
 
 ---
 
@@ -8,7 +8,7 @@
 - **Completed Phases:** Phase 1 — Authentication & User Management; Phase 2 — UI/UX Design System & Application Layout
 - **Workflow Strategy:** Frontend-First Development after Authentication
   - *Rationale:* User authentication establishes the identity foundation. Following authentication, all layouts, pages, interactive prototypes, and the Web PDF Reader will be built frontend-first using typed mock contracts before implementing backend business logic. This guarantees UI ergonomics and API expectation stability before database schemas are locked down.
-- **Status:** Core Reading Milestones 1 and 2 are verified: PDF Reader plus real private PDF upload/storage, My Library, and authorized reading. Milestone 2 explicitly authorizes this bounded backend business slice; the wider catalog/shelf/annotation work remains incomplete.
+- **Status:** Core Reading Milestones 1–3 implement the PDF Reader, private upload/storage, My Library, database-backed private reading progress and Continue Reading. Milestones 2/3 explicitly authorize these bounded backend business slices; wider catalog/shelf/annotation work remains incomplete.
 
 ---
 
@@ -152,8 +152,26 @@ The following records the earlier bootstrap verification. The latest review and 
 - A first restart attempt hit a disposable PostgreSQL connection timeout; the test harness now uses explicit loopback and bounded connections, and the final restart run passed. The normal application's datasource/auth configuration was not changed for this test-only correction.
 - Configuration examples, normal launch-helper allowlist, database/API/system/reader/design notes, and roadmap are synchronized. Full inventory, reproducible commands, API contracts, storage failure limits, and screenshots: [Upload Milestone 2 report](upload-milestone-2.md). No actual `.env`, backend auth/security flow, or existing migration was modified. No private uploaded binaries, commit, or push were added to Git.
 
-## 10. Recommended Next Task
+## 10. Core Reading Experience — Milestone 3 (2026-11-14)
 
-**Milestone 3: Database-backed Private Reading Progress & Continue Reading.** Scope owner/book/file-version persistence, automatic save/restore, conflicts, and the real Continue Reading collection separately. Public publishing, moderation, annotations, highlights/bookmarks/notes, reviews, EPUB, and S3 remain deferred. Book editing/deletion and storage orphan reconciliation also remain future work.
+- Added forward V4 `V4__create_reading_progress.sql` with private user/book/immutable-file references, a composite book/file foreign key, unique user/file records, positive current/monotonic furthest pages, UTC timestamps and recent-reading indexes. V1/V2/V3 and the original CC0 sample remain byte-identical. Verification used disposable PostgreSQL only; no development data, volumes or existing uploads were reset or deleted.
+- Added layered progress entity/repository/service/controller/DTOs/mapper. Owner-checked GET/PUT `/api/v1/books/{bookId}/progress` restore and save positions; PUT requires the existing CSRF protection and an explicit immutable `bookFileId`. Empty GET is `data: null`; stale versions receive 409. The atomic upsert prevents duplicate simultaneous first saves and retains the maximum reported page while allowing backward current-page navigation.
+- Added paginated GET `/api/v1/library/continue-reading`, ordered by server activity time with an ID tie-breaker, latest-version filtering and fetch joins without N+1. The existing LibraryPage now displays real responsive Continue Reading cards and also serves the existing Continue Reading route, with skeleton/empty/error/retry, metadata fallback, progress/time/version, pagination and authoritative resume.
+- The Reader loads matching server progress before mounting and waits for actual PDF readiness before first save. Real PDFs use a 1.5-second debounced serial queue with latest-position coalescing, no redundant presentation-only writes, explicit unsaved/saving/saved/failed status, retry and departure flush. My Library waits for a confirmed flush or an explicit leave-without-save choice after failure. Mode/zoom/resize preserve the explicitly selected canonical page; a spread's visible range is labelled separately.
+- Uploaded PDFs never fall back to browser progress; previous private prototype positions are ignored. Only `/read/sample` retains labelled browser-local state. Existing AuthProvider/session/CSRF/ProtectedRoute and PDF rendering components remain unchanged. User-scoped caches are cleared by existing authentication behavior; queued sends check current account identity and late replies cannot populate another account's cache.
+- **Backend:** 42 passed, zero failures/errors/skips, BUILD SUCCESS in 2:13, including existing auth/upload regressions, progress concurrency/validation/security/version/pagination tests, fresh V4 and V3→V4 preservation. Docker Desktop was initially stopped; tests passed after starting it. **Frontend:** 56 passed across 11 files; application/test/config TypeScript, lint and production build passed. Existing shared-bundle advisory remains (525.79 kB minified).
+- **Browser:** full Edge suite **30/30 passed in 2.5 minutes**, including all auth/upload/sample-reader regressions, actual page-4 autosave/refresh/Continue Reading/fresh-context restore, same-browser account switching with another user's GET/PUT/list denial, presentation-only no-write assertions, serial/coalesced navigation, failure/retry, failed departure retention and expired-session removal. An initial new-test assertion incorrectly assumed every login redirects to Account; the final passing run preserves the app's existing intended-destination behavior.
+- **Production:** 12/12 Edge checks passed in 2.0 minutes against built assets, including the real child JVM restart (PID 6268 → 3924) with the same disposable PostgreSQL and temporary storage. Sessions were lost as expected; reauthentication restored the identical confirmed page-4 progress record and private PDF. A final acceptance rerun with explicit mobile Continue Reading overflow/card assertions passed 1/1 in 34.5 seconds. Desktop Continue Reading, mobile Reader and mobile Continue Reading screenshots were visually inspected and retained. Full inventory, API/version/save semantics, commands, screenshots and limitations: [Milestone 3 report](reading-progress-milestone-3.md).
+- **Limits:** only confirmed positions are durable; tab-close/termination delivery is best effort. Browser Back/unmount attempts a flush without a blocking router guard. Across independent tabs/devices, last database write wins for current page while furthest page remains monotonic; no distributed conflict resolution is claimed. New file versions start fresh; replacement management itself remains unimplemented. Finished Books and analytics are not included.
+
+## 11. Milestone 4 Design Proposal (2026-11-14)
+
+- Created [Private Bookmarks & Personal Table of Contents design](../architecture/bookmark-design.md) after reviewing the current source, V1–V4, relevant documentation and retained UI screenshots. It proposes focused Reader keyboard/toolbar/status/fullscreen improvements, a responsive bookmark sidebar, book/file-version-scoped private groups and bookmarks, proposed V5 constraints/API contracts, small implementation steps and a complete security/persistence/regression acceptance plan.
+- Proposed defaults: one bookmark per user/file/page, editable title and named color, optional flat group, non-destructive group deletion to Ungrouped, explicit file consistency and revision conflicts. These are pending implementation review, not shipped functionality. The existing speculative combined-annotations V5 roadmap entry is narrowed in the proposal; no V5 migration exists or has been applied.
+- This task changes documentation only. No application code, dependency, Authentication behavior, applied migration, development data or uploaded PDF was changed. Existing Milestone 3 working-tree changes are preserved. Tests/builds were not rerun for this design-only task; the Milestone 3 results above remain historical verified results. No commit or push was made.
+
+## 12. Recommended Next Task
+
+**Review the [Milestone 4 proposal](../architecture/bookmark-design.md), then separately authorize its implementation.** Bookmarks and groups remain unimplemented. Public publishing, moderation, highlights/notes, reviews, EPUB and S3 remain deferred. Book editing/deletion and storage orphan reconciliation also remain future work.
 
 Phase 1 covers registration, login, logout, and profile retrieval. Profile editing, password recovery/change, email verification, MFA, admin provisioning/management, and durable or clustered sessions remain separate work. In-memory sessions are lost on backend restart; evaluate recovery and email verification before a public production launch.

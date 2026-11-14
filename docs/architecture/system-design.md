@@ -191,3 +191,10 @@ sequenceDiagram
 2. **Resource Ownership Verification:** Every access to private books, bookmarks, highlights, or reading progress must explicitly assert that the resource belongs to the authenticated user ID (`owner_id == currentUser.id`).
 3. **No Entity Leakage:** Internal JPA entities must never be returned directly in REST controllers. All API responses use explicit DTOs.
 4. **Credential Isolation:** Database credentials are injected strictly via environment variables; never checked into version control.
+
+
+## 7. Core Reading Milestone 3 Integration (2026-11-14)
+
+Private reading progress now uses the existing Axios/session/CSRF transport and a layered controller/service/repository/DTO/mapper implementation. V4 adds per-user immutable-file progress with atomic upsert and monotonic furthest page. The Reader loads matching progress before mounting, then uses a 1.5-second coalescing serial save queue; PDF rendering/cleanup remains unchanged. The sample alone retains explicit local persistence. No real-book fallback to mock/local data occurs.
+
+The existing LibraryPage also serves Continue Reading with recent version-bound progress, pagination, fallback metadata and resume links. Ownership scopes both reads/writes and recent-list queries. Existing AuthProvider private-cache clearing is preserved; queues check account identity before sending and before cache invalidation. Separate tabs use last database write wins for current page, while furthest page remains monotonic. See [Milestone 3](../development/reading-progress-milestone-3.md) and [API contracts](api-conventions.md#7-private-reading-progress-contracts-milestone-3).

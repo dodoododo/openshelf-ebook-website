@@ -3,6 +3,7 @@ import AxeBuilder from "@axe-core/playwright"
 
 // Presentation fixture only; the unchanged auth.spec.ts exercises live Spring sessions.
 async function fixture(page: Page, userId: string | null = "reader-one") {
+  await page.route("**/api/v1/library/continue-reading*", (route) => route.fulfill({ json: { success: true, data: [], pagination: { page: 0, size: 6, totalElements: 0, totalPages: 0, isLast: true } } }))
   await page.route("**/api/v1/books/mine*", (route) => route.fulfill({ json: { success: true, data: [], pagination: { page: 0, size: 12, totalElements: 0, totalPages: 0, isLast: true } } }))
   await page.route("**/api/v1/books/missing", (route) => route.fulfill({ status: 404, json: { success: false, error: { code: "BOOK_NOT_FOUND", message: "Book unavailable", details: [] } } }))
   await page.route("**/api/v1/auth/**", (route) => route.fulfill(userId ? {
@@ -49,7 +50,8 @@ test("real PDF and worker, selection, single/double navigation, zoom, fullscreen
   await expect(page.getByLabel("Page", { exact: true })).toHaveValue("2")
   await page.getByRole("button", { name: "Double page", exact: true }).click()
   await ready(page, [1, 2])
-  await expect(page.locator(".reader-page-count")).toHaveText("–2 of 5")
+  await expect(page.locator(".reader-page-count")).toHaveText("of 5")
+  await expect(page.getByLabel("Visible spread")).toHaveText("(view 1–2)")
   await page.getByLabel("Next page").click()
   await ready(page, [3, 4])
   await page.screenshot({ path: testInfo.outputPath("reader-desktop-double.png"), fullPage: true })
@@ -128,7 +130,7 @@ test("mobile fits the page, keeps controls visible, supports selection, keyboard
   await page.getByRole("button", { name: "Double page", exact: true }).click()
   await ready(page, [1, 2])
   await page.setViewportSize({ width: 375, height: 812 })
-  await ready(page, [1])
+  await ready(page, [2])
 })
 
 test("PDF loading and errors support retry; unknown books and guest reader access are handled", async ({ page }) => {

@@ -1,5 +1,8 @@
 import type { ApiResponse } from "@/types/api"
 import type { MockProgressResult, ReadingProgress } from "@/types/readingProgress"
+import type { ContinueReadingPage, StoredReadingProgress } from "@/types/readingProgress"
+import { apiClient } from "@/services/apiClient"
+import { ApiRequestError } from "@/utils/apiErrors"
 
 const memory = new Map<string, ReadingProgress>()
 const keyFor = (userId: string, bookId: string, version: string) =>
@@ -43,4 +46,26 @@ export async function saveReadingProgress(userId: string, progress: ReadingProgr
     memory.set(key, progress)
     return response({ progress, storage: "memory" })
   }
+}
+
+/** Real books never fall back to local storage. File IDs explicitly bind every load/save. */
+export async function getPrivateReadingProgress(bookId: string, bookFileId: string, signal?: AbortSignal): Promise<ApiResponse<StoredReadingProgress | null>> {
+  const { data } = await apiClient.get<ApiResponse<StoredReadingProgress | null>>(`/api/v1/books/${encodeURIComponent(bookId)}/progress`, { params: { bookFileId }, signal })
+  if (data.data && (data.data.bookFileId !== bookFileId || data.data.bookId !== bookId)) {
+    throw new ApiRequestError("This PDF version has changed. Reopen the book.", 409, "FILE_VERSION_CHANGED")
+  }
+  return data
+}
+
+export async function updatePrivateReadingProgress(bookId: string, bookFileId: string, currentPage: number): Promise<StoredReadingProgress> {
+  const { data } = await apiClient.put<ApiResponse<StoredReadingProgress>>(`/api/v1/books/${encodeURIComponent(bookId)}/progress`, { bookFileId, currentPage })
+  if (data.data.bookId !== bookId || data.data.bookFileId !== bookFileId || data.data.currentPage !== currentPage) {
+    throw new ApiRequestError("The saved position could not be confirmed. Reopen the book.", 409, "PROGRESS_MISMATCH")
+  }
+  return data.data
+}
+
+export async function getContinueReading(page = 0, signal?: AbortSignal): Promise<ContinueReadingPage> {
+  const { data } = await apiClient.get<ContinueReadingPage>("/api/v1/library/continue-reading", { params: { page, size: 6 }, signal })
+  return data
 }

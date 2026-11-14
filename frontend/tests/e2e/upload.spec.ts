@@ -57,6 +57,7 @@ test("real upload → library → reader → reload → logout → second-user i
   await expect(page.locator('[data-page-number="1"]')).toHaveAttribute("data-rendered", "true")
   await expect(page.getByText("Private PDF", { exact: true })).toBeVisible()
   await page.getByLabel("Next page").click()
+  await expect(page.getByLabel("Reading save status")).toContainText("Saved")
   await page.reload()
   await expect(page.locator('[data-page-number="2"]')).toHaveAttribute("data-rendered", "true")
   await page.screenshot({ path: testInfo.outputPath("private-reader.png"), fullPage: true })
@@ -97,6 +98,7 @@ test("real upload → library → reader → reload → logout → second-user i
 })
 
 test("mobile upload handles server errors without losing form input", async ({ page }, testInfo) => {
+  await page.route("**/api/v1/library/continue-reading*", (route) => route.fulfill({ json: { success: true, data: [], pagination: { page: 0, size: 6, totalElements: 0, totalPages: 0, isLast: true } } }))
   await page.route("**/api/v1/auth/**", (route) => route.fulfill({ json: { data: { id: "upload-test", email: "test@example.com", displayName: "Reader", role: "ROLE_USER", headerName: "X-CSRF-TOKEN", token: "test-only" } } }))
   await page.route("**/api/v1/books/mine*", (route) => route.fulfill({ json: { success: true, data: [], pagination: { page: 0, size: 12, totalPages: 0, totalElements: 0, isLast: true } } }))
   await page.route("**/api/v1/books", (route) => route.fulfill({ status: 400, json: { success: false, error: { code: "INVALID_PDF", message: "Choose a valid, unencrypted PDF", details: [] } } }))

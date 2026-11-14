@@ -8,6 +8,7 @@ export interface BookDetail {
   pdfUrl: string
   license: string
   source?: "sample" | "private"
+  totalPages?: number
 }
 
 export interface PrivateBook {

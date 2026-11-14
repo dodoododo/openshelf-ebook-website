@@ -117,7 +117,7 @@ Establish a cohesive, modern visual design system, typography scale, color palet
 
 ## Phase 3: Frontend Pages & Interactive Prototypes (Frontend-First)
 
-**Status (2026-11-13):** Core Reading Milestone 1 implements the protected PDF reader prototype. Milestone 2 explicitly authorizes and implements the private upload/storage backend slice plus a real My Library → Reader path, while retaining the sample and browser-local progress. See [Reader Milestone 1](reader-milestone-1.md) and [Upload Milestone 2](upload-milestone-2.md). Wider catalog, shelf, and annotation prototypes remain future work. The next recommended core-reading milestone is **database-backed private reading progress and Continue Reading**, scoped separately.
+**Status (2026-11-14):** Core Reading Milestones 1-3 implement the protected PDF Reader, private upload/storage, and database-backed account progress with Continue Reading. These explicitly authorized backend slices retain the frontend-first architecture and sample demo. See [Milestone 3](reading-progress-milestone-3.md), [Upload Milestone 2](upload-milestone-2.md), and [Reader Milestone 1](reader-milestone-1.md). Wider catalog, shelves, annotations, publication and moderation remain future work. Recommended next: **Private Bookmarks**, scoped separately with file-version ownership and Reader navigation.
 
 ### Objectives
 Construct all key application screens, user workflows, and the Web PDF Reader using typed contracts, rich mock data, and a replaceable service layer—**without implementing backend business logic prematurely**.
@@ -179,24 +179,24 @@ Implement backend business logic, database entities, file storage abstractions, 
 ### Tasks
 - [ ] **Database Schema Migrations (Flyway):**
   - [x] `V3__create_private_books.sql`: implemented private `books` and immutable `book_files`, with ownership, file integrity metadata, and version constraints. V1/V2 remain unchanged.
-  - `V4__create_reading_progress_table.sql`: unique `(user_id, book_id)`, current_page, progress_percentage, is_finished, timestamps.
-  - `V5__create_annotations_tables.sql`: bookmarks, bookmark_groups, highlights, notes.
+  - [x] `V4__create_reading_progress.sql`: user/book/file-version keys, unique `(user_id, book_file_id)`, positive current/furthest pages, atomic maximum, UTC timestamps and recent-reading indexes. Percentage is derived; Finished Books is not implemented.
+  - **Proposed only:** `V5__create_private_bookmarks.sql` for bookmarks and bookmark_groups, following the [Milestone 4 design](../architecture/bookmark-design.md). No V5 file exists yet. This narrows the earlier combined-annotations placeholder; highlights and notes require separately scoped later migrations. Milestone 4 implementation is not authorized by the design task.
   - `V6__create_publication_requests_table.sql`: book_id, requester_id, reviewer_id, status, reviewer_notes, timestamps.
 - [ ] **File Storage Abstraction (`com.openshelf.storage`):**
   - [x] `StorageService` interface and `LocalStorageService`, stable absolute configuration, generated keys, bounded writes, cleanup, SHA-256 integrity hashing, and private Resource retrieval.
   - Deduplication and alternate storage implementations remain deferred; identical PDFs may be independent private uploads.
 - [ ] **Backend Entities & Repositories:**
   - [x] `Book`, `BookFile`, and repositories implemented for Milestone 2.
-  - `ReadingProgress`, `Bookmark`, `Highlight`, `Note`, `PublicationRequest` remain deferred.
+  - [x] `ReadingProgress` and repository implemented in Milestone 3; bookmarks, highlights, notes and publication requests remain deferred.
   - JPA repositories with ownership-scoped queries (`findByUserIdAndBookId`, etc.).
 - [ ] **Business Services (`com.openshelf.service`):**
   - `BookService`: upload handling, metadata extraction (page count via PDFBox/Tika), private-by-default enforcement, deletion cascades.
-  - `ReadingProgressService`: progress calculation, auto-finish triggers, continue-reading query.
+  - [x] `ReadingProgressService`: owner/latest-version checks, page validation, atomic upsert, derived percentage and paginated recent reading; no auto-finish triggers.
   - `AnnotationService`: bookmark, highlight, and note operations with strict user ownership validation.
   - `PublicationService`: submit request, admin approve/reject workflow with status transitions.
 - [ ] **REST Controllers (`com.openshelf.controller`):**
   - [x] Milestone 2 `BookController`: CSRF-protected multipart creation, owner-scoped library/detail, and authenticated full/range PDF delivery at `/api/v1/books/{id}/file`.
-  - `BookController`, `ReadingProgressController`, `AnnotationController`, `PublicationController`.
+  - [x] Milestone 3 `ReadingProgressController`: GET/PUT `/books/{id}/progress`, GET `/library/continue-reading`; annotations/publications remain deferred.
   - HTTP Range streaming endpoint for PDF viewing (`GET /api/v1/books/{id}/stream`).
 
 **Milestone:** All backend services, schema migrations, and REST controllers implemented and unit/integration tested.  
@@ -216,10 +216,10 @@ Connect the frontend components to the live Spring Boot REST APIs by swapping ou
 ### Tasks
 - [ ] **Service Layer Replacement:**
   - Transition `src/services/` from mock functions to actual Axios calls hitting `/api/v1/*`.
-  - Implement environment toggle (`VITE_USE_MOCK_API=false`) allowing runtime fallback if needed.
+  - Private books/progress always use live APIs; only `/read/sample` uses explicit mock metadata/local progress. Do not silently fall back to mock/private local data.
 - [ ] **TanStack Query Mutation Wiring:**
   - Connect upload form to `useMutation` calling `POST /api/v1/books`.
-  - Connect reader progress sync to debounced `POST /api/v1/books/{id}/progress`.
+  - [x] Connect private reader progress to debounced, serial `PUT /api/v1/books/{id}/progress`, confirmed status/retry, restoration and real Continue Reading.
   - Connect bookmark, highlight, and note creation to backend endpoints.
   - Invalidate relevant query caches upon successful mutations.
 - [ ] **PDF Reader Live Streaming:**

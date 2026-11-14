@@ -12,10 +12,10 @@ import org.junit.jupiter.api.Test;
 
 class MigrationTests extends PostgresIntegrationTest {
     @Test
-    void newSchemaAppliesV1V2AndV3() throws Exception {
+    void newSchemaAppliesAllFourMigrations() throws Exception {
         Flyway flyway = flyway(schema());
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(3);
-        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("3");
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4);
+        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("4");
         assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
     }
 
@@ -29,7 +29,7 @@ class MigrationTests extends PostgresIntegrationTest {
             statement.execute("INSERT INTO " + schema + ".sentinel VALUES ('preserve me')");
         }
         Flyway flyway = flyway(schema);
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(3);
         assertThat(java.util.Arrays.stream(flyway.info().applied())
                 .filter(info -> info.getVersion() != null && "1".equals(info.getVersion().toString()))
                 .findFirst().orElseThrow().getChecksum()).isEqualTo(1233558564);
@@ -41,7 +41,7 @@ class MigrationTests extends PostgresIntegrationTest {
     }
 
     @Test
-    void upgradesV2ToV3PreservingUsersAndAppliedChecksums() throws Exception {
+    void upgradesV2PreservingUsersAndAppliedChecksums() throws Exception {
         String schema = schema();
         var old = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
                 .schemas(schema).defaultSchema(schema).target("2").load();
@@ -52,10 +52,32 @@ class MigrationTests extends PostgresIntegrationTest {
             statement.execute("INSERT INTO " + schema + ".users (id,email,password_hash,display_name,role) VALUES ('"+id+"','preserve@example.com','test-hash','Preserve','ROLE_USER')");
         }
         var upgraded = flyway(schema);
-        assertThat(upgraded.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(upgraded.migrate().migrationsExecuted).isEqualTo(2);
         assertThat(java.util.Arrays.stream(upgraded.info().applied()).filter(info -> info.getVersion() != null).limit(2).map(info -> info.getChecksum()).toList()).isEqualTo(checksums);
         try (Connection connection = connection(); var statement = connection.createStatement(); var result = statement.executeQuery("SELECT id FROM " + schema + ".users")) {
             assertThat(result.next()).isTrue(); assertThat(result.getObject(1, UUID.class)).isEqualTo(id);
+        }
+    }
+
+    @Test
+    void upgradesV3ToV4PreservingBooksFilesAndHistory() throws Exception {
+        String schema = schema();
+        var previous = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+                .schemas(schema).defaultSchema(schema).target("3").load();
+        previous.migrate();
+        var checksums = java.util.Arrays.stream(previous.info().applied()).filter(info -> info.getVersion() != null).map(info -> info.getChecksum()).toList();
+        UUID user = UUID.randomUUID(), book = UUID.randomUUID(), file = UUID.randomUUID();
+        try (Connection connection = connection(); var statement = connection.createStatement()) {
+            statement.execute("INSERT INTO "+schema+".users(id,email,password_hash,display_name,role) VALUES ('"+user+"','v3@example.com','test','Reader','ROLE_USER')");
+            statement.execute("INSERT INTO "+schema+".books(id,owner_id,title,author) VALUES ('"+book+"','"+user+"','Keep book','Author')");
+            statement.execute("INSERT INTO "+schema+".book_files(id,book_id,version,storage_key,original_filename,content_type,size_bytes,sha256,page_count) VALUES ('"+file+"','"+book+"',1,'"+UUID.randomUUID()+".pdf','keep.pdf','application/pdf',100,'"+"0".repeat(64)+"',5)");
+        }
+        var upgraded = flyway(schema);
+        assertThat(upgraded.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(upgraded.validateWithResult().validationSuccessful).isTrue();
+        assertThat(java.util.Arrays.stream(upgraded.info().applied()).filter(info -> info.getVersion() != null).limit(3).map(info -> info.getChecksum()).toList()).isEqualTo(checksums);
+        try (Connection connection = connection(); var statement = connection.createStatement(); var result = statement.executeQuery("SELECT id FROM "+schema+".book_files")) {
+            assertThat(result.next()).isTrue(); assertThat(result.getObject(1, UUID.class)).isEqualTo(file);
         }
     }
 

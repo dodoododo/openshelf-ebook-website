@@ -26,7 +26,8 @@ export function AppRoutes() {
         <Route element={<ProtectedRoute />}>
           <Route path="/account" element={<AccountPage />} />
           <Route path="/library" element={<LibraryPage />} />
-          {shelfNavigation.filter((item) => item.requiresAuth && item.to !== "/library").map((item) => <Route key={item.to} path={item.to} element={<ShelfPreviewPage />} />)}
+          <Route path="/library/continue-reading" element={<LibraryPage />} />
+          {shelfNavigation.filter((item) => item.requiresAuth && item.to !== "/library" && item.to !== "/library/continue-reading").map((item) => <Route key={item.to} path={item.to} element={<ShelfPreviewPage />} />)}
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>

@@ -25,6 +25,7 @@ public class BrowserTestApplication {
         Files.writeString(arguments, "-cp\n\"" + System.getProperty("java.class.path").replace("\\", "\\\\") + "\"\n"
                 + "com.openshelf.OpenshelfApplication\n--spring.profiles.active=test\n--server.port=18080\n"
                 + "--server.servlet.session.cookie.name=openshelf-session\n--server.servlet.session.cookie.secure=false\n"
+                + "--openshelf.auth.registration-ip-limit=100\n--openshelf.auth.login-ip-limit=200\n"
                 + "--spring.devtools.add-properties=false\n--spring.devtools.restart.enabled=false\n");
         ProcessBuilder launcher = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", "java").toString(),
                 "-Dspring.devtools.restart.enabled=false", "@" + arguments);

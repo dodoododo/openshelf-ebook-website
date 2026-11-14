@@ -3,6 +3,7 @@ import AxeBuilder from "@axe-core/playwright"
 
 // These fixtures exercise presentation states only. auth.spec.ts uses the real isolated backend.
 async function fixture(page: Page, authenticated = false) {
+  await page.route("**/api/v1/library/continue-reading*", (route) => route.fulfill({ json: { success: true, data: [], pagination: { page: 0, size: 6, totalElements: 0, totalPages: 0, isLast: true } } }))
   await page.route("**/api/v1/books/mine*", (route) => route.fulfill({ json: { success: true, data: [], pagination: { page: 0, size: 12, totalElements: 0, totalPages: 0, isLast: true } } }))
   let signedIn = authenticated
   await page.route("**/api/v1/auth/**", async (route) => {

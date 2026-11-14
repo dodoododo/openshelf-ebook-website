@@ -14,7 +14,7 @@ export async function getBook(bookId: string): Promise<ApiResponse<BookDetail>> 
     id: book.id, title: book.title, author: book.author, description: book.description,
     documentVersion: book.file.id,
     pdfUrl: apiClient.getUri({ url: `/api/v1/books/${encodeURIComponent(book.id)}/file` }),
-    license: "Private PDF · browser-local reading progress", source: "private",
+    license: "Private PDF · account reading progress", source: "private", totalPages: book.file.pageCount,
   } }
 }
 
