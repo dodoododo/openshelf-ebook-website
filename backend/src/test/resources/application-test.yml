@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    # Fail closed if a test forgets its Testcontainers configuration.
+    url: jdbc:postgresql://127.0.0.1:1/tests-require-testcontainers
+    username: isolated-tests
+    password: unused
+  jpa:
+    hibernate:
+      ddl-auto: validate
+logging:
+  level:
+    root: WARN
+    com.openshelf: INFO

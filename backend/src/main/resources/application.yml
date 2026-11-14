@@ -9,10 +9,33 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
-    baseline-on-migrate: true
+    # New databases must apply versioned migrations; unmanaged schemas must fail closed.
+    baseline-on-migrate: false
+  servlet:
+    multipart:
+      max-file-size: ${OPENSHELF_UPLOAD_MAX_FILE_SIZE:30MB}
+      max-request-size: ${OPENSHELF_UPLOAD_MAX_REQUEST_SIZE:31MB}
+      file-size-threshold: 0
+
+openshelf:
+  storage:
+    # Absolute, stable across working directories; never a static/public resource directory.
+    root: ${OPENSHELF_STORAGE_ROOT:${user.home}/.openshelf/storage/books}
+  upload:
+    max-bytes: ${OPENSHELF_UPLOAD_MAX_BYTES:31457280}
 
 server:
   port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      timeout: 30m
+      tracking-modes: cookie
+      cookie:
+        name: __Host-openshelf-session
+        http-only: true
+        secure: true
+        same-site: lax
+        path: /
 
 management:
   endpoints:

@@ -10,6 +10,13 @@ spring:
       hibernate:
         format_sql: true
 
+server:
+  servlet:
+    session:
+      cookie:
+        name: openshelf-session
+        secure: false
+
 logging:
   level:
     root: INFO

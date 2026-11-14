@@ -1,111 +1,42 @@
+﻿import { ArrowRight, ArrowUpRight, Library, SunMoon } from "lucide-react"
+import { Link } from "react-router-dom"
+import { ConnectionStatus } from "@/components/common/ConnectionStatus"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { useBackendHealth } from "@/hooks/useBackendHealth"
-import { BookOpen, CheckCircle2, RefreshCw, Server, XCircle } from "lucide-react"
+import { Card } from "@/components/ui/card"
+import { useAuth } from "@/hooks/useAuth"
+import { useTheme } from "@/hooks/useTheme"
 
 export function HomePage() {
-  const { data, isLoading, isError, error, refetch, isFetching } =
-    useBackendHealth()
-
-  return (
-    <main className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-slate-800">
-      <div className="max-w-xl w-full space-y-8">
-        {/* Brand Header */}
-        <header className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-500/20">
-            <BookOpen className="w-8 h-8" />
-          </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
-            OpenShelf
-          </h1>
-          <p className="text-base text-slate-600 max-w-md mx-auto">
-            Digital Library & Social Reading Platform. Discover, upload,
-            read, organize, annotate, and share books in a distraction-free
-            environment.
-          </p>
-        </header>
-
-        {/* System Architecture & Status Card */}
-        <Card className="shadow-sm border-slate-200">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Server className="w-5 h-5 text-slate-500" />
-                <CardTitle className="text-lg">Backend Health Check</CardTitle>
-              </div>
-              <span className="text-xs font-mono bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full border border-slate-200">
-                /actuator/health
-              </span>
-            </div>
-            <CardDescription>
-              Real-time connectivity verification between React Vite and Spring
-              Boot 4.1 backend.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 rounded-lg border border-slate-200 bg-slate-50/50 flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">
-                Connection Status
-              </span>
-              <div>
-                {isLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-amber-600">
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Connecting to backend...</span>
-                  </div>
-                ) : isError ? (
-                  <div className="flex items-center gap-2 text-sm font-semibold text-rose-600">
-                    <XCircle className="w-4 h-4" />
-                    <span>Unreachable</span>
-                  </div>
-                ) : data?.status === "UP" ? (
-                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Online (Status: UP)</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-sm font-semibold text-amber-600">
-                    <span>Status: {data?.status ?? "UNKNOWN"}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {isError && (
-              <div className="p-3 text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-md">
-                Failed to reach Spring Boot API: {(error as Error)?.message || "Unknown error"}.
-                Ensure Spring Boot is running on port 8080.
-              </div>
-            )}
-
-            <div className="pt-2 flex justify-end">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => refetch()}
-                disabled={isFetching}
-              >
-                <RefreshCw
-                  className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`}
-                />
-                {isFetching ? "Checking..." : "Re-check Health"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Footer info */}
-        <footer className="text-center text-xs text-slate-400 space-y-1">
-          <p>OpenShelf Engineering Initialization & Bootstrap Phase</p>
-          <p>Monorepo Layered Architecture • Spring Boot 4.1.2 • React 19 • PostgreSQL 17</p>
-        </footer>
+  const { status } = useAuth()
+  const { preference, resolvedTheme, setTheme } = useTheme()
+  return <div className="reading-room">
+    <div className="room-meta"><span className="eyebrow">The OpenShelf reading room</span><Badge>Layout preview</Badge></div>
+    <section className="room-hero" aria-labelledby="room-title">
+      <div className="hero-copy">
+        <h1 id="room-title">Read a little.<br /><em>Stay a while.</em></h1>
+        <p>A quieter corner of the internet, made for the stories you love and the ones you have yet to find.</p>
+        <div className="hero-actions">
+          <Button asChild><Link to={status === "authenticated" ? "/account" : "/register"}>{status === "authenticated" ? "Your reading space" : "Join OpenShelf"}<ArrowRight size={16} aria-hidden="true" /></Link></Button>
+          <a className="quiet-link" href="#layout-details">Take a look around<ArrowUpRight size={15} aria-hidden="true" /></a>
+        </div>
       </div>
-    </main>
-  )
+      <figure className="book-illustration">
+        <div className="book-scene" aria-hidden="true">
+          <div className="book-cover cover-one"><strong>Margins<br />&amp; meadows</strong><svg width="40" height="44" viewBox="0 0 40 44" fill="none"><path d="M20 42V8m0 21C6 29 5 18 5 18s15-1 15 11Zm0-9C32 20 34 8 34 8S20 7 20 20Z" stroke="currentColor" /></svg><small>Field notes · Vol. I</small></div>
+          <div className="book-cover cover-two"><small>A collection of moments</small><span className="cover-orbit" /><strong>The quiet<br /><em>hours</em></strong><small>OpenShelf Editions</small></div>
+          <div className="book-cover cover-three"><strong>Small<br /><em>wonders</em></strong><span className="cover-sun" /><small>On everyday things</small></div>
+        </div>
+        <figcaption>Illustrative covers · layout demo, not library data</figcaption>
+      </figure>
+    </section>
+    <section id="layout-details" className="layout-details" aria-labelledby="details-title">
+      <div className="section-heading"><h2 id="details-title">Make room for reading.</h2><p>A first look at your OpenShelf space.</p></div>
+      <div className="demo-cards">
+        <Card className="demo-card"><Library size={24} strokeWidth={1.4} aria-hidden="true" /><h3>Your stories. Your shelves.</h3><p>A place to return to. Shelf navigation is ready to explore; book collections will follow in a later phase.</p><Button asChild variant="ghost"><Link to="/library">See a shelf preview<ArrowRight size={15} aria-hidden="true" /></Link></Button></Card>
+        <Card className="demo-card"><SunMoon size={24} strokeWidth={1.4} aria-hidden="true" /><h3>Comfort in every light.</h3><p>Warm paper by day, forest ink by night. You’re viewing the {resolvedTheme} theme{preference === "system" ? ", following your device" : ""}.</p><Button variant="ghost" onClick={() => setTheme("system")} disabled={preference === "system"}>Use device setting<ArrowRight size={15} aria-hidden="true" /></Button></Card>
+      </div>
+    </section>
+    <ConnectionStatus />
+  </div>
 }

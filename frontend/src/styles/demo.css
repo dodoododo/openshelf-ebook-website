@@ -1,0 +1,62 @@
+.reading-room { max-width: 1200px; margin: 0 auto; padding: 2.5rem var(--page-gutter) 1.5rem; }
+.room-meta { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.eyebrow { text-transform: uppercase; font-size: .625rem; letter-spacing: .17em; font-weight: 600; color: var(--muted-foreground); }
+.room-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center; padding: 3.5rem 0 3rem; }
+.hero-copy h1 { font-family: var(--font-serif); font-size: clamp(3.25rem, 5.3vw, 5rem); line-height: 1.02; font-weight: 450; letter-spacing: -.045em; }
+.hero-copy h1 em { font-weight: 400; color: var(--accent-foreground); }
+.hero-copy > p { color: var(--muted-foreground); max-width: 23rem; margin-top: 1.5rem; font-size: .9375rem; line-height: 1.8; }
+.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: 2rem; }
+.hero-actions .quiet-link { min-height: 44px; display: inline-flex; align-items: center; gap: .5rem; padding: .5rem .75rem; font-size: .8125rem; text-decoration: underline; text-underline-offset: 4px; }
+.book-illustration { margin: 0; min-width: 0; }
+.book-scene { height: 300px; position: relative; display: flex; align-items: flex-end; justify-content: center; gap: .65rem; padding: 1.75rem 1rem; background: var(--secondary); border-radius: 48% 48% 2px 2px; border-bottom: 1px solid var(--input); }
+.book-cover { position: relative; flex-shrink: 0; width: 29%; max-width: 110px; min-height: 180px; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 1.2rem .65rem; font-family: var(--font-serif); line-height: 1.1; box-shadow: 3px 3px 0 var(--cover-paper), 5px 5px 0 var(--cover-ink); }
+.book-cover::before { content: ""; position: absolute; left: 5px; top: 0; bottom: 0; border-left: 1px solid currentColor; opacity: .25; }
+.book-cover small { margin-top: auto; padding-top: 1rem; text-transform: uppercase; letter-spacing: .12em; font-family: var(--font-sans); font-size: .4rem; }
+.book-cover strong { font-weight: 450; font-size: 1.45rem; }
+.cover-one { background: var(--cover-forest); color: var(--cover-light); transform: rotate(-9deg) translateY(-6px); z-index: 1; }
+.cover-one svg { margin-top: 1.5rem; }
+.cover-two { background: var(--cover-paper); color: var(--cover-ink); min-height: 210px; transform: translateY(-8px); z-index: 2; }
+.cover-two .cover-orbit { width: 3rem; height: 3rem; border: 1px solid currentColor; border-radius: 50%; margin: .75rem 0; position: relative; }
+.cover-orbit::after { content: ""; position: absolute; width: 3rem; height: 3rem; border: 1px solid currentColor; border-radius: 50%; left: -.6rem; top: .3rem; }
+.cover-three { background: var(--cover-clay); color: var(--cover-ink); transform: rotate(9deg) translateY(-4px); }
+.cover-three .cover-sun { width: 3rem; height: 3rem; border-radius: 50%; background: var(--cover-paper); margin: 1rem 0; }
+.book-illustration figcaption { text-align: center; font-size: .625rem; color: var(--muted-foreground); margin-top: 1rem; letter-spacing: .035em; }
+.layout-details { border-top: 1px solid var(--border); padding-top: 1.75rem; }
+.section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
+.section-heading h2 { font-family: var(--font-serif); font-size: 1.65rem; line-height: 1.2; }
+.section-heading p { font-size: .6875rem; color: var(--muted-foreground); }
+.demo-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.demo-card { padding: 1.5rem; display: flex; flex-direction: column; align-items: flex-start; }
+.demo-card > svg { color: var(--muted-foreground); margin-bottom: 1.25rem; }
+.demo-card h3 { font-family: var(--font-serif); font-size: 1.5rem; line-height: 1.2; }
+.demo-card p { color: var(--muted-foreground); font-size: .8125rem; line-height: 1.7; margin: .75rem 0 1rem; max-width: 25rem; }
+.demo-card a, .demo-card button { margin-top: auto; margin-left: -.75rem; }
+.connection-status { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: 1rem; align-items: center; font-size: .6875rem; color: var(--muted-foreground); }
+.connection-status > span { display: flex; align-items: center; gap: .45rem; }
+.connection-status .connection-online { color: var(--success); }
+.connection-status .connection-offline { color: var(--error-foreground); }
+@media (max-width: 1023px) {
+  .room-hero { gap: 1.25rem; padding-block: 3rem; }
+  .hero-copy h1 { font-size: 3.25rem; }
+  .book-scene { height: 270px; gap: .5rem; padding-inline: .5rem; }
+  .book-cover { min-height: 155px; padding: 1rem .4rem; }
+  .book-cover strong { font-size: 1.15rem; }
+  .cover-two { min-height: 185px; }
+  .book-cover small { font-size: .35rem; }
+}
+@media (max-width: 767px) {
+  .reading-room { padding-top: 1.75rem; }
+  .eyebrow { font-size: .5625rem; letter-spacing: .12em; }
+  .room-hero { grid-template-columns: 1fr; gap: 2.25rem; padding: 2.5rem 0 2rem; }
+  .hero-copy h1 { font-size: clamp(3.25rem, 12vw, 4rem); }
+  .hero-copy > p { margin-top: 1.25rem; }
+  .hero-actions { margin-top: 1.5rem; gap: .25rem; }
+  .book-illustration { max-width: 23rem; width: 100%; margin-inline: auto; }
+  .book-scene { height: 265px; gap: .75rem; }
+  .book-cover { min-height: 165px; }
+  .cover-two { min-height: 195px; }
+  .book-cover strong { font-size: 1.35rem; }
+  .demo-cards { grid-template-columns: 1fr; }
+  .section-heading { align-items: flex-start; flex-direction: column; gap: .4rem; }
+  .connection-status { align-items: flex-start; }
+}

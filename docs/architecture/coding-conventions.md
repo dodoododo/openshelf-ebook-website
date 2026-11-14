@@ -102,3 +102,10 @@ public class BookService {
 ### 3.6 Server State vs Client State
 - **Server State (Remote Data):** Always manage via **TanStack Query** (`useQuery`, `useMutation`). Do not replicate server responses in `useState`.
 - **Client State (Transient UI):** Use local `useState` or React Context for ephemeral reader state (e.g., active page input, sidebar collapse).
+
+### 3.7 Shared Visual Foundation
+- Follow the [design system](../design/design-system.md): semantic light/dark tokens in `styles/globals.css`, shared layout compositions in `styles/layout.css`, and reusable primitives in `components/ui/`.
+- Use `ThemeProvider` / `useTheme` for appearance. Store only the explicit appearance preference under `openshelf-theme`; authentication secrets remain out of browser storage.
+- Nest normal application pages under `AppShell`; authentication pages remain separate. A future PDF Reader must use a dedicated reading layout.
+- Preserve accessible names, 44px controls, visible focus, modal focus management, reduced-motion behavior, and a single main landmark. New layout changes should keep the 375/768/1280/1440px checks passing.
+- Build only primitives currently used by screens. Clearly label mock data and layout previews; do not present decorative covers as live book records.

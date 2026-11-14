@@ -1,5 +1,7 @@
 # OpenShelf — System Architecture & Design
 
+> **Authentication implemented (2026-11-12):** Phase 1 uses server-side sessions, HttpOnly cookies, Argon2id, and session-backed CSRF protection. See the [approved design](authentication-design.md) and [verification report](../development/phase-1-implementation.md). Public routes are method-specific; `/auth/me` requires authentication.
+
 ## 1. High-Level Architecture Overview
 
 OpenShelf is structured as a **Monorepo with Traditional Layered Architecture**. The platform consists of a single-page React frontend, a RESTful Spring Boot 4.1.2 backend, a PostgreSQL 17 relational database, and an object storage tier for PDF binaries (local filesystem during development, Amazon S3 for production).
@@ -61,7 +63,7 @@ flowchart TD
 ### 2.2 Backend Responsibilities (Spring Boot + Java 21)
 - **API Boundary:** Expose RESTful endpoints, perform Bean Validation, and map incoming JSON contracts.
 - **Business Operations:** Enforce business invariants, privacy boundaries, publication workflows, and role checks.
-- **Security & Authorization:** Token authentication, resource-level ownership verification, and security filter enforcement.
+- **Security & Authorization:** Server-side session authentication and CSRF protection, resource-level ownership verification, and security filter enforcement.
 - **Data Persistence:** Relational data mapping, optimistic locking, and transaction boundaries.
 - **Binary Streaming:** Chunked, stream-optimized delivery of PDF files with HTTP range header support.
 
@@ -96,6 +98,10 @@ To enable full interactivity before backend endpoints are built:
 - The Web PDF Reader component must never rely on mocked canvas stubs.
 - Reader UI, page-turning, dual-page layout, and zoom controls are validated against a real binary (`public/sample.pdf`) during the frontend phase.
 
+**Milestone 1 implemented (2026-11-13):** `/read/:bookId` is protected by the existing session-aware route guard and sits outside `AppShell`. A lazy-loaded PDF.js reader renders only the active page/spread, with its installed worker emitted by Vite. `bookService.ts` supplies the original CC0 sample contract; `readingProgressService.ts` supplies browser-only, user/book/document-version-scoped progress with a memory fallback. Both are explicit mock services with `ApiResponse<T>` signatures. Authentication continues to use the live backend. No book/progress API, database migration, or mock/live API switch has been added. Browser keys are a prototype separation mechanism, not authorization. Details and remaining reader capabilities: [Reader specification](../design/reader-spec.md).
+
+**Milestone 2:** The explicitly authorized upload/storage slice now integrates real books while retaining the sample demo. `/library` queries the session owner's real paginated library and uploads multipart PDFs through the existing Axios/CSRF transport. `bookService.ts` maps real private metadata into the existing reader contract; only ID `sample` uses mock metadata. PDF.js fetches the protected file endpoint with credentials and byte-range support. Progress remains browser-local, keyed by user/book/immutable file ID; there is no progress database table. Backend controller/service/repository/entity/DTO/mapper/storage layers remain separate. `StorageService` abstracts binaries; `LocalStorageService` uses a configurable absolute directory outside public assets. The V3 migration normalizes book metadata and immutable file versions. See [Milestone 2](../development/upload-milestone-2.md) for configuration, failure handling, and verification.
+
 ---
 
 ## 4. Strict Monorepo Layered Architecture
@@ -115,7 +121,7 @@ com.openshelf/
 │   └── response/              # Outbound API response models
 ├── mapper/                    # Entity <-> DTO conversion mappers
 ├── config/                    # Spring @Configuration classes
-├── security/                  # Security filter chains, token handlers
+├── security/                  # Security filter chains, session authentication
 ├── exception/                 # Custom domain exceptions & @ControllerAdvice
 ├── storage/                   # Storage abstraction (Local & S3)
 ├── validation/                # Custom validation annotations & validators
@@ -162,7 +168,7 @@ sequenceDiagram
     participant DB as PostgreSQL 17
 
     User->>Sec: HTTP Request (Headers + Body)
-    Sec->>Sec: Validate Session / Token & Roles
+    Sec->>Sec: Validate Session, CSRF & Roles
     Sec->>Ctrl: Dispatch to matching endpoint
     Ctrl->>Val: Validate @Valid DTO
     Val-->>Ctrl: DTO valid
@@ -181,7 +187,7 @@ sequenceDiagram
 
 ## 6. Security Principles
 
-1. **Deny by Default:** All endpoints require authenticated access except designated public routes (e.g. `/actuator/health`, `/api/v1/auth/**`, public catalog queries).
+1. **Deny by Default:** All endpoints require authenticated access except explicit public method/path rules: health GETs, `GET /api/v1/auth/csrf`, and POST registration/login/logout. `/api/v1/auth/me` requires authentication; `/api/v1/admin/**` requires ROLE_ADMIN. Public catalog access will be defined in its later phase.
 2. **Resource Ownership Verification:** Every access to private books, bookmarks, highlights, or reading progress must explicitly assert that the resource belongs to the authenticated user ID (`owner_id == currentUser.id`).
 3. **No Entity Leakage:** Internal JPA entities must never be returned directly in REST controllers. All API responses use explicit DTOs.
-4. **Credential Isolation:** Database credentials and signing secrets are injected strictly via environment variables; never checked into version control.
+4. **Credential Isolation:** Database credentials are injected strictly via environment variables; never checked into version control.

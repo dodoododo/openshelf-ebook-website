@@ -34,6 +34,8 @@ frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
 frontend/.vite/
+frontend/test-results/
+frontend/playwright-report/
 frontend/*.local
 
 # Logs
@@ -48,3 +50,5 @@ lerna-debug.log*
 # Database & Storage
 data/
 uploads/
+/storage/
+/backend/storage/

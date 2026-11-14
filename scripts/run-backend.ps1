@@ -24,7 +24,11 @@ if (-not (Test-Path $envFile)) {
         "POSTGRES_PORT",
         "POSTGRES_HOST",
         "SPRING_PROFILES_ACTIVE",
-        "SERVER_PORT"
+        "SERVER_PORT",
+        "OPENSHELF_STORAGE_ROOT",
+        "OPENSHELF_UPLOAD_MAX_BYTES",
+        "OPENSHELF_UPLOAD_MAX_FILE_SIZE",
+        "OPENSHELF_UPLOAD_MAX_REQUEST_SIZE"
     )
 
     Get-Content $envFile | ForEach-Object {

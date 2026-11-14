@@ -10,7 +10,7 @@ This document details the confirmed functional and non-functional requirements f
 
 ### 2.1 Authentication & Account Management
 - **User Registration:** Email and password registration with format validation.
-- **User Authentication:** Secure login session management via credentials and token handling.
+- **User Authentication:** Spring Security server-side sessions with HttpOnly cookies and session-backed CSRF protection; see the approved authentication design. Phase 1 includes registration, login, current-user retrieval, and logout.
 - **Account Profiles:** Basic profile view and modification (display name, avatar placeholder, account preferences).
 - **Role-Based Authorization:** Strict boundary distinction between standard Users (`ROLE_USER`) and Administrators (`ROLE_ADMIN`).
 

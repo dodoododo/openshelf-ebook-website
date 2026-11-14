@@ -1,0 +1,7 @@
+package com.openshelf.repository;
+
+import com.openshelf.entity.Book;
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface BookRepository extends JpaRepository<Book, UUID> { }

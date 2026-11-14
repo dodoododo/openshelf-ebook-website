@@ -39,23 +39,28 @@ flowchart LR
 
 ## Phase 1: Full-Stack Authentication & User Management
 
+**Status (2026-11-12):** Approved, implemented, and verified. The [Authentication design](../architecture/authentication-design.md) defines the accepted session/CSRF/Argon2id contract; the [implementation report](phase-1-implementation.md) records the Phase 1 checks. Phase 2 subsequently preserved and reverified these authentication flows.
+
 ### Objectives
-Establish secure, production-ready user identity management across backend and frontend before initiating feature prototyping.
+Establish registration, login, current-user retrieval, logout, and secure browser session management across backend and frontend before initiating feature prototyping. Evaluate recovery and email verification separately before a public production launch.
 
 ### Tasks
-- [ ] **Database Migration:** Create `V2__create_users_table.sql` (UUID, email, password_hash, display_name, role, timestamps).
-- [ ] **Backend Domain & Persistence:** Create `User` entity, `Role` enum (`ROLE_USER`, `ROLE_ADMIN`), and `UserRepository`.
-- [ ] **Security & JWT:** Configure `BCryptPasswordEncoder`, `JwtService` (token generation, parsing, claim validation), and `JwtAuthenticationFilter`.
-- [ ] **Auth REST API:** Implement `AuthController` and `AuthService`:
+- [x] **Database Migration:** Create `V2__create_users_table.sql` (UUID, email, password_hash, display_name, role, timestamps).
+- [x] **Backend Domain & Persistence:** Create `User` entity, `Role` enum (`ROLE_USER`, `ROLE_ADMIN`), and `UserRepository`.
+- [x] **Isolated Tests:** Move context/integration tests to disposable PostgreSQL 17 Testcontainers databases before adding write operations; propagate Maven failures from the test helper.
+- [x] **Security:** Configure Argon2id password hashing, Spring Security session authentication, fixation protection, explicit context persistence, JSON security errors, and bounded credential throttling.
+- [x] **Auth REST API:** Implement `AuthController` and `AuthService`:
+  - `GET /api/v1/auth/csrf` (public, session-backed masked CSRF token).
   - `POST /api/v1/auth/register` (with Jakarta Bean Validation).
-  - `POST /api/v1/auth/login` (credential verification and JWT issuance).
+  - `POST /api/v1/auth/login` (credential verification, session rotation, and HttpOnly cookie).
   - `GET /api/v1/auth/me` (current authenticated user profile).
-- [ ] **Exception Handling:** Centralized `GlobalExceptionHandler` mapping validation errors, duplicate emails, and invalid credentials.
-- [ ] **Frontend Auth Layer:**
-  - Token storage utility (`localStorage` / memory with secure refresh strategy).
-  - Central Axios auth request interceptor (`Authorization: Bearer <token>`).
-  - `AuthContext` and custom `useAuth` hook managing user session state.
-- [ ] **Frontend Auth Pages:**
+  - `POST /api/v1/auth/logout` (CSRF-protected server-session invalidation).
+- [x] **Exception Handling:** Centralized `GlobalExceptionHandler` mapping validation errors, duplicate emails, and invalid credentials.
+- [x] **Frontend Auth Layer:**
+  - Browser-managed session cookie; CSRF token retained only in memory and renewed after login/logout.
+  - Central Axios client using the same-origin proxy, credentials, and an explicit CSRF header for unsafe requests.
+  - TanStack Query owns current-user server state; `AuthContext` and `useAuth` expose derived session state/actions.
+- [x] **Frontend Auth Pages:**
   - Login page (`/login`) with form validation.
   - Registration page (`/register`) with form validation.
   - Protected route wrapper (`<ProtectedRoute />`) redirecting unauthenticated users.
@@ -63,43 +68,56 @@ Establish secure, production-ready user identity management across backend and f
 **Milestone:** Complete registration, login, session persistence, and profile retrieval working end-to-end between React and Spring Boot.  
 **Acceptance Criteria:**
 - User can register with valid credentials; duplicate email returns HTTP 409 with user-friendly error.
-- User can log in and receive valid JWT; protected endpoints reject requests without valid Bearer token.
-- Refreshing browser preserves active session.
-- Passwords stored as salted BCrypt hashes.
+- User can log in with a rotated server session; protected endpoints reject unauthenticated requests with JSON 401.
+- Missing or invalid CSRF tokens reject unsafe requests, including login, registration, and logout.
+- Refreshing the browser restores an active session via `/me`; logout immediately invalidates it. In-memory sessions expire after 30 idle minutes and are lost on backend restart.
+- Passwords are stored as salted Argon2id hashes under the approved design.
+- Integration and browser tests verify cookie attributes, role enforcement, CSRF rotation, session persistence, and logout using isolated databases.
 
 ---
 
 ## Phase 2: UI/UX Design System, Design Tokens & Core Layout
 
+**Status (2026-11-12):** Implemented and verified. See the [design system](../design/design-system.md) and [Phase 2 implementation report](phase-2-implementation.md). Subsequent Phase 3 progress is recorded below.
+
 ### Objectives
 Establish a cohesive, modern visual design system, typography scale, color palette, and responsive shell before building individual feature screens.
 
 ### Tasks
-- [ ] **Design System Foundations:**
+- [x] **Design System Foundations:**
   - Refine Tailwind CSS v4 design tokens in `src/styles/globals.css` (primary, secondary, muted, accent, borders, radius, shadows).
   - Configure Dark / Light mode CSS variables and theme toggle hook.
   - Typography scale and font stack for readability and book metadata display.
-- [ ] **Core Layout Components (`src/components/layout/`):**
+- [x] **Core Layout Components (`src/components/layout/`):**
   - `AppHeader`: Logo, navigation links, search trigger, theme toggle, and user profile avatar dropdown.
-  - `AppSidebar`: Collapsible navigation for library shelves (Continue Reading, Finished, My Library, Favorites).
+  - `AppSidebar`: Collapsible navigation for Discover, My Library, Continue Reading, Finished, Favourites, and My Published.
   - `MobileNav`: Responsive bottom bar or slide-out drawer for smartphone viewports.
   - `AppShell`: Persistent master layout container wrapping pages with header, sidebar, and main content area.
-  - `Breadcrumb` and page title utility headers.
-- [ ] **Extended Shared Primitives (`src/components/ui/`):**
-  - Input, Label, DropdownMenu, Dialog (Modal), Tabs, Badge, Tooltip, Skeleton, Toast notifications.
-- [ ] **Responsive Design Rules:**
-  - Mobile breakpoint (< 768px): Collapsible drawer, single-column cards, full-width reader.
-  - Tablet breakpoint (768px - 1024px): Compact sidebar, 2-column book grids.
-  - Desktop breakpoint (> 1024px): Expanded navigation, multi-column grids, dual-page spread reader.
+  - `PageHeading` composes breadcrumbs and the page title.
+- [x] **Used Shared Primitives (`src/components/ui/`):**
+  - Refined Button/Card; added Input, DropdownMenu, Dialog, and Badge. Forms retain native labels.
+  - Defer Tabs, Tooltip, Skeleton, and Toast until a product screen needs them; avoid unused component scaffolding.
+- [x] **Responsive Design Rules:**
+  - Mobile (< 768px): Modal navigation drawer and single-column demonstration cards.
+  - Tablet (768–1023px): Compact icon rail and two-column demonstration cards.
+  - Desktop (>= 1024px): Expanded/collapsible sidebar and editorial content area.
+  - Reader layout and product book grids remain Phase 3 work.
+- [x] **Authentication Integration and Layout Demonstration:**
+  - Preserve Phase 1 session/CSRF services and protected routes; restyle forms and account using the shared tokens.
+  - Clearly caption decorative Home covers and protected shelf routes as layout previews.
+  - Page/shelf search is local navigation only; it does not implement catalog search.
+- [x] **Verification:** 26 frontend tests, TypeScript app/test checks, production build, lint, 19 isolated backend tests, and 15 Edge browser tests passed. Eight light/dark screenshots at 375/768/1280/1440px were visually inspected; tested states have no automated WCAG A/AA violations or horizontal overflow.
 
-**Milestone:** Responsive application shell with theme switching, responsive navigation, and core component library rendered in isolation.  
+**Milestone:** Responsive application shell with theme switching, accessible navigation, and used shared primitives demonstrated on a small preview page.
 **Acceptance Criteria:**
 - Application shell adapts seamlessly across mobile (375px), tablet (768px), and desktop (1280px+).
-- All shared primitives render consistently in light and dark modes with zero layout shift.
+- Light/dark themes preserve layout geometry; keyboard focus, modal behavior, touch controls, guest/authenticated navigation, and existing logout work. Font-display swap permits normal font loading changes; a zero-CLS performance audit was not claimed.
 
 ---
 
 ## Phase 3: Frontend Pages & Interactive Prototypes (Frontend-First)
+
+**Status (2026-11-13):** Core Reading Milestone 1 implements the protected PDF reader prototype. Milestone 2 explicitly authorizes and implements the private upload/storage backend slice plus a real My Library → Reader path, while retaining the sample and browser-local progress. See [Reader Milestone 1](reader-milestone-1.md) and [Upload Milestone 2](upload-milestone-2.md). Wider catalog, shelf, and annotation prototypes remain future work. The next recommended core-reading milestone is **database-backed private reading progress and Continue Reading**, scoped separately.
 
 ### Objectives
 Construct all key application screens, user workflows, and the Web PDF Reader using typed contracts, rich mock data, and a replaceable service layer—**without implementing backend business logic prematurely**.
@@ -160,15 +178,16 @@ Implement backend business logic, database entities, file storage abstractions, 
 
 ### Tasks
 - [ ] **Database Schema Migrations (Flyway):**
-  - `V3__create_books_table.sql`: books table (UUID, uploader_id, title, author, description, storage_key, file_hash, file_size, page_count, cover_key, status, timestamps).
+  - [x] `V3__create_private_books.sql`: implemented private `books` and immutable `book_files`, with ownership, file integrity metadata, and version constraints. V1/V2 remain unchanged.
   - `V4__create_reading_progress_table.sql`: unique `(user_id, book_id)`, current_page, progress_percentage, is_finished, timestamps.
   - `V5__create_annotations_tables.sql`: bookmarks, bookmark_groups, highlights, notes.
   - `V6__create_publication_requests_table.sql`: book_id, requester_id, reviewer_id, status, reviewer_notes, timestamps.
 - [ ] **File Storage Abstraction (`com.openshelf.storage`):**
-  - `StorageService` interface with `LocalStorageServiceImpl` for local development.
-  - Secure file path sanitization, SHA-256 deduplication hashing, and stream retrieval.
+  - [x] `StorageService` interface and `LocalStorageService`, stable absolute configuration, generated keys, bounded writes, cleanup, SHA-256 integrity hashing, and private Resource retrieval.
+  - Deduplication and alternate storage implementations remain deferred; identical PDFs may be independent private uploads.
 - [ ] **Backend Entities & Repositories:**
-  - `Book`, `ReadingProgress`, `Bookmark`, `Highlight`, `Note`, `PublicationRequest`.
+  - [x] `Book`, `BookFile`, and repositories implemented for Milestone 2.
+  - `ReadingProgress`, `Bookmark`, `Highlight`, `Note`, `PublicationRequest` remain deferred.
   - JPA repositories with ownership-scoped queries (`findByUserIdAndBookId`, etc.).
 - [ ] **Business Services (`com.openshelf.service`):**
   - `BookService`: upload handling, metadata extraction (page count via PDFBox/Tika), private-by-default enforcement, deletion cascades.
@@ -176,6 +195,7 @@ Implement backend business logic, database entities, file storage abstractions, 
   - `AnnotationService`: bookmark, highlight, and note operations with strict user ownership validation.
   - `PublicationService`: submit request, admin approve/reject workflow with status transitions.
 - [ ] **REST Controllers (`com.openshelf.controller`):**
+  - [x] Milestone 2 `BookController`: CSRF-protected multipart creation, owner-scoped library/detail, and authenticated full/range PDF delivery at `/api/v1/books/{id}/file`.
   - `BookController`, `ReadingProgressController`, `AnnotationController`, `PublicationController`.
   - HTTP Range streaming endpoint for PDF viewing (`GET /api/v1/books/{id}/stream`).
 

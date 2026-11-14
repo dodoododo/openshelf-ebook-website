@@ -84,7 +84,7 @@ To run and debug the Spring Boot backend directly inside IntelliJ IDEA:
 
 ## 5. Verification Commands
 
-Run backend automated tests:
+Run backend automated tests with Docker Desktop running. Tests use disposable PostgreSQL 17 Testcontainers on dynamic ports, force the `test` profile, and never load `.env` or connect to the Compose database. The helper propagates Maven failures:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\test-backend.ps1
 ```
@@ -95,3 +95,12 @@ cd frontend
 npm.cmd run build
 npm.cmd run lint
 ```
+
+Run frontend unit tests and test/config TypeScript checks:
+
+```powershell
+npm.cmd run test:types
+npm.cmd test
+```
+
+For the isolated full-stack browser test server and `npm.cmd run test:e2e`, follow [the Phase 1 reproduction instructions](phase-1-implementation.md#reproducing-the-browser-checks). These use backend port 18080, frontend port 5174, and disposable data. Normal development uses 8080/5173. The next normal backend startup will apply forward migration V2 to create users without modifying V1 or resetting data.

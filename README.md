@@ -123,11 +123,15 @@ Detailed project documentation is available in the `docs/` folder:
 - [Development Roadmap](docs/development/roadmap.md)
 - [Local Setup Guide](docs/development/setup-guide.md)
 - [Current Engineering State](docs/development/current-state.md)
+- [Authentication Design](docs/architecture/authentication-design.md)
+- [Phase 1 Implementation & Verification](docs/development/phase-1-implementation.md)
 
 ---
 
 ## 7. Current Development Status
 
-- **Phase:** Phase 0 — Full-Stack Project Initialization & Engineering Setup (Completed)
-- **Status:** All layers verified and running (PostgreSQL 17, Spring Boot 4.1.2, React 19).
-- **Next Step:** Phase 1 — User Authentication & Account Foundation.
+- **Phase:** Authentication and the visual foundation are completed. Core Reading Milestones 1 and 2 are implemented and verified: the PDF Reader plus private upload/storage and a real My Library.
+- **Status:** 34 backend tests, 43 frontend tests, and 24 full-suite browser tests pass. Production upload checks also verify persistence across a backend JVM restart and private access isolation. Existing development data and V1/V2 are preserved; pending migrations apply on normal backend startup.
+- **Next Step:** Milestone 3 — Database-backed Private Reading Progress & Continue Reading, when requested. Current reading progress remains browser-local.
+
+Sign in and open **My Library → Upload PDF** to read a private PDF. Uploads are limited to 30 MiB by default and stored outside public assets under the JVM user's `~/.openshelf/storage/books`, or an absolute `OPENSHELF_STORAGE_ROOT` override. Normal backend startup applies the forward V3 migration; do not reset the database. See [Milestone 2 configuration, API contracts, verification, and screenshots](docs/development/upload-milestone-2.md).

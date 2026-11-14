@@ -1,5 +1,4 @@
-# scripts/test-backend.ps1
-# Helper script to execute backend Maven tests with local .env variables
+# All database tests use disposable Testcontainers PostgreSQL instances, never .env.
 [CmdletBinding()]
 param (
     [Parameter(ValueFromRemainingArguments = $true)]
@@ -7,49 +6,19 @@ param (
 )
 
 $ErrorActionPreference = "Stop"
+$backendDir = Join-Path (Split-Path -Parent $PSScriptRoot) "backend"
+$testExitCode = 1
+$previousTestProfiles = $env:SPRING_PROFILES_ACTIVE
+$env:SPRING_PROFILES_ACTIVE = "test"
 
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$rootDir = Split-Path -Parent $scriptDir
-$envFile = Join-Path $rootDir ".env"
-
-if (Test-Path $envFile) {
-    $allowedKeys = @(
-        "POSTGRES_DB",
-        "POSTGRES_USER",
-        "POSTGRES_PASSWORD",
-        "POSTGRES_PORT",
-        "POSTGRES_HOST",
-        "SPRING_PROFILES_ACTIVE",
-        "SERVER_PORT"
-    )
-
-    Get-Content $envFile | ForEach-Object {
-        $line = $_.Trim()
-        if ($line -and -not ($line.StartsWith("#"))) {
-            $equalsIndex = $line.IndexOf("=")
-            if ($equalsIndex -gt 0) {
-                $key = $line.Substring(0, $equalsIndex).Trim()
-                $val = $line.Substring($equalsIndex + 1).Trim()
-                if ($val.StartsWith('"') -and $val.EndsWith('"')) {
-                    $val = $val.Substring(1, $val.Length - 2)
-                } elseif ($val.StartsWith("'") -and $val.EndsWith("'")) {
-                    $val = $val.Substring(1, $val.Length - 2)
-                }
-
-                if ($allowedKeys -contains $key) {
-                    [System.Environment]::SetEnvironmentVariable($key, $val, "Process")
-                }
-            }
-        }
-    }
+Push-Location -LiteralPath $backendDir
+try {
+    Write-Host "Running Maven tests against isolated PostgreSQL containers..." -ForegroundColor Cyan
+    & ".\mvnw.cmd" clean test @MavenArgs
+    $testExitCode = $LASTEXITCODE
+} finally {
+    $env:SPRING_PROFILES_ACTIVE = $previousTestProfiles
+    Pop-Location
 }
 
-$backendDir = Join-Path $rootDir "backend"
-Set-Location $backendDir
-
-Write-Host "Running Maven tests..." -ForegroundColor Cyan
-if ($MavenArgs) {
-    & ".\mvnw.cmd" clean test $MavenArgs
-} else {
-    & ".\mvnw.cmd" clean test
-}
+exit $testExitCode

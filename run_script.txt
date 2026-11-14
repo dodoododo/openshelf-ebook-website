@@ -1,0 +1,18 @@
+// Database, have to open docker CLI beforehand
+cd /d "D:\Microsoft VS Code\Web Projects\openshelf-ebook-website"
+docker compose up -d
+
+// Backend
+cd /d "D:\Microsoft VS Code\Web Projects\openshelf-ebook-website"
+powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\run-backend.ps1"
+
+Success: Tomcat started on port 8080 (http)
+            Started OpenshelfApplication
+Check health: http://localhost:8080/actuator/health  
+            {
+              "status": "UP"
+            }
+
+// Frontend
+cd /d "D:\Microsoft VS Code\Web Projects\openshelf-ebook-website\frontend"
+npm run dev
